@@ -1,0 +1,12 @@
+datasets
+pandas
+scikit-learn
+matplotlib
+seaborn
+numpy
+joblib
+fastapi
+uvicorn
+pydantic   
+py-eureka-client 
+Flask

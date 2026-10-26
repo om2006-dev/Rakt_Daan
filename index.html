@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blood Demand Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <div class="brand-mark" aria-hidden="true">+</div>
+            <p class="eyebrow">RAKHT DAAN · FORECASTING</p>
+            <h1>Blood demand<br><span>predictor</span></h1>
+            <p class="intro">Estimate monthly blood product requests for a facility using the saved Random Forest model.</p>
+        </header>
+
+        {% if error %}
+        <div class="message error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        {% if prediction is not none %}
+        <section class="result" aria-live="polite">
+            <div>
+                <p class="eyebrow">PREDICTED MONTHLY DEMAND</p>
+                <p class="result-number">{{ "%.0f"|format(prediction) }} <span>units</span></p>
+                <p class="result-note">Estimated blood units requested for the selected product and blood group.</p>
+            </div>
+            <div class="result-icon" aria-hidden="true">↗</div>
+        </section>
+        {% endif %}
+
+        <form method="post" class="form-card">
+            <div class="section-heading">
+                <span class="step">01</span>
+                <div>
+                    <h2>Facility and product</h2>
+                    <p>Choose what you want to forecast.</p>
+                </div>
+            </div>
+
+            <div class="field-grid">
+                <label>
+                    Facility level
+                    <select name="facility_level" required>
+                        <option value="">Select a facility level</option>
+                        {% for value in facility_levels %}
+                        <option value="{{ value }}" {% if form_data.get('facility_level') == value %}selected{% endif %}>{{ value.replace('_', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    Facility ID
+                    <select name="facility_id" required>
+                        <option value="">Select a facility</option>
+                        {% for value in facility_ids %}
+                        <option value="{{ value }}" {% if form_data.get('facility_id') == value %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    Blood product
+                    <select name="product_name" required>
+                        <option value="">Select a product</option>
+                        {% for value in products %}
+                        <option value="{{ value }}" {% if form_data.get('product_name') == value %}selected{% endif %}>{{ value.replace('_', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    Blood group
+                    <select name="blood_group" required>
+                        <option value="">Select a blood group</option>
+                        {% for value in blood_groups %}
+                        <option value="{{ value }}" {% if form_data.get('blood_group') == value %}selected{% endif %}>{{ value|replace('_pos', '+')|replace('_neg', '-')|upper }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    Forecast month
+                    <select name="month" required>
+                        {% for value, name in months %}
+                        <option value="{{ value }}" {% if form_data.get('month', default_month)|int == value %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    Forecast year
+                    <input type="number" name="year" min="2000" max="2100" required
+                           value="{{ form_data.get('year', default_year) }}">
+                </label>
+                <label>
+                    Blood bank fridge
+                    <select name="has_blood_bank_fridge" required>
+                        <option value="">Select an option</option>
+                        <option value="1" {% if form_data.get('has_blood_bank_fridge') == '1' %}selected{% endif %}>Yes</option>
+                        <option value="0" {% if form_data.get('has_blood_bank_fridge') == '0' %}selected{% endif %}>No</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="section-heading history-heading">
+                <span class="step">02</span>
+                <div>
+                    <h2>Recent history <span class="optional">optional</span></h2>
+                    <p>Enter known figures to give the model more context. Leave blank when unavailable.</p>
+                </div>
+            </div>
+
+            <div class="history-grid">
+                {% for lag in (1, 12) %}
+                <fieldset>
+                    <legend>{% if lag == 1 %}Previous month{% else %}Same month last year{% endif %}</legend>
+                    {% for metric in history_metrics %}
+                    {% set field_name = metric ~ '_lag_' ~ lag %}
+                    <label>
+                        {{ metric.replace('_', ' ')|title }}
+                        <input type="number" name="{{ field_name }}" min="0" step="any" inputmode="decimal"
+                               placeholder="No record" value="{{ form_data.get(field_name, '') }}">
+                    </label>
+                    {% endfor %}
+                </fieldset>
+                {% endfor %}
+            </div>
+
+            <button type="submit">Predict monthly demand <span aria-hidden="true">→</span></button>
+            <p class="footnote">The model was trained on 2021–2024 data. A prediction is an estimate, not a substitute for operational judgment.</p>
+        </form>
+        <footer>Powered by the project's saved blood demand model</footer>
+    </main>
+</body>
+</html>
